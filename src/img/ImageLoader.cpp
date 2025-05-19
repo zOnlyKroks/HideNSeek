@@ -11,7 +11,7 @@ static std::string hashImage(const Image& image) {
     // Simple hash over image bytes using std::hash
     const auto size = image.pixels.size();
     const auto dataPtr = reinterpret_cast<const char*>(image.pixels.data());
-    std::size_t h = std::hash<std::string_view>{}(std::string_view(dataPtr, size));
+    const std::size_t h = std::hash<std::string_view>{}(std::string_view(dataPtr, size));
     std::ostringstream oss;
     oss << std::hex << std::setw(sizeof(std::size_t)*2)
         << std::setfill('0') << h;
@@ -51,7 +51,7 @@ void ImageLoader::saveImage(const std::filesystem::path &path,
         throw std::runtime_error("Error: only 3-channel images supported by saveImage");
     }
 
-    std::string outPath = hash
+    const std::string outPath = hash
         ? (path.parent_path() /
            (path.stem().string() + "_" + hashImage(img) + path.extension().string())).string()
         : path.string();

@@ -11,15 +11,15 @@
 #include "img/ImageUtils.h"
 
 ImageCryptoApp::ImageCryptoApp()
-    : options("MyProgram", "One line description of MyProgram") {
+    : options("MyProgram", "One line description of MyProgram"), workImage(), outImage() {
     options.add_options()
-    ("d,debug", "Enable Debug Output")
-    ("dec,decrypt", "Crypt mode")
-    ("fi,inputFile", "Input File name", cxxopts::value<std::string>())
-    ("fo,outputFile", "Output File name", cxxopts::value<std::string>())
-    ("ecAlg,encryptAlgorithm", "Encrypt algorithm to use", cxxopts::value<std::string>())
-    ("hiBin,histoBin", "Histo Bin Width", cxxopts::value<int>())
-    ("hiChH,histoChartHeight", "Histo Chart Height", cxxopts::value<int>());
+            ("d,debug", "Enable Debug Output")
+            ("dec,decrypt", "Crypt mode")
+            ("fi,inputFile", "Input File name", cxxopts::value<std::string>())
+            ("fo,outputFile", "Output File name", cxxopts::value<std::string>())
+            ("ecAlg,encryptAlgorithm", "Encrypt algorithm to use", cxxopts::value<std::string>())
+            ("hiBin,histoBin", "Histo Bin Width", cxxopts::value<int>())
+            ("hiChH,histoChartHeight", "Histo Chart Height", cxxopts::value<int>());
 }
 
 void ImageCryptoApp::run(const int argc, char **argv) {
