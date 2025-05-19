@@ -1,77 +1,71 @@
+#include <algorithm>
+
 #include "XORAlgorithm.h"
 #include <stdexcept>
 #include <numeric>
 #include <random>
-#include <opencv2/opencv.hpp>
+#include <array>
 
-static uint64_t seedFromKey(const std::string &key) {
+static uint64_t seedFromKey(const std::string& key) {
     return std::hash<std::string>{}(key);
 }
 
-void XORImageEncryptor::encrypt(const cv::Mat& inputImage,
-                                cv::Mat& outputImage,
-                                const std::string& key) {
-    if (inputImage.depth() != CV_8U)
-        throw std::runtime_error("Only 8‑bit images supported");
+void XORImageEncryptor::encrypt(const Image& input, Image& output, const std::string& key) {
+    if (input.pixels.empty())
+        throw std::runtime_error("Input image is empty.");
+    if (input.channels != 3)
+        throw std::runtime_error("Only 3-channel images supported.");
 
-    if (inputImage.channels() != 3)
-        throw std::runtime_error("Only 3-channel (color) images supported");
+    int total = input.width * input.height;
+    // Extract pixels as RGB triplets
+    std::vector<std::array<unsigned char,3>> pixels(total);
+    for (int i = 0; i < total; ++i) {
+        pixels[i] = { input.pixels[3*i], input.pixels[3*i+1], input.pixels[3*i+2] };
+    }
+    // Shuffle indices
+    std::vector<int> order(total);
+    std::iota(order.begin(), order.end(), 0);
+    std::mt19937 gen(seedFromKey(key));
+    std::shuffle(order.begin(), order.end(), gen);
 
-    outputImage.create(inputImage.size(), CV_8UC3);
-
-    int rows = inputImage.rows;
-    int cols = inputImage.cols;
-    int totalPixels = rows * cols;
-
-    std::vector<int> indices(totalPixels);
-    std::iota(indices.begin(), indices.end(), 0);
-
-    std::mt19937 rng(seedFromKey(key));
-    std::shuffle(indices.begin(), indices.end(), rng);
-
-    for (int i = 0; i < totalPixels; ++i) {
-        int srcIdx = indices[i];
-        int srcRow = srcIdx / cols;
-        int srcCol = srcIdx % cols;
-        int dstRow = i / cols;
-        int dstCol = i % cols;
-        outputImage.at<cv::Vec3b>(dstRow, dstCol) = inputImage.at<cv::Vec3b>(srcRow, srcCol);
+    // Build output pixel data
+    output.width = input.width;
+    output.height = input.height;
+    output.channels = 3;
+    output.pixels.resize(total * 3);
+    for (int i = 0; i < total; ++i) {
+        const auto &src = pixels[order[i]];
+        output.pixels[3*i]   = src[0];
+        output.pixels[3*i+1] = src[1];
+        output.pixels[3*i+2] = src[2];
     }
 }
 
-void XORImageEncryptor::decrypt(const cv::Mat& inputImage,
-                                cv::Mat& outputImage,
-                                const std::string& key) {
-    if (inputImage.depth() != CV_8U)
-        throw std::runtime_error("Only 8‑bit images supported");
+void XORImageEncryptor::decrypt(const Image& input, Image& output, const std::string& key) {
+    if (input.pixels.empty())
+        throw std::runtime_error("Input image is empty.");
+    if (input.channels != 3)
+        throw std::runtime_error("Only 3-channel images supported.");
 
-    if (inputImage.channels() != 3)
-        throw std::runtime_error("Only 3-channel (color) images supported");
-
-    outputImage.create(inputImage.size(), CV_8UC3);
-
-    int rows = inputImage.rows;
-    int cols = inputImage.cols;
-    int totalPixels = rows * cols;
-
-    std::vector<int> indices(totalPixels);
-    std::iota(indices.begin(), indices.end(), 0);
-
-    std::mt19937 rng(seedFromKey(key));
-    std::shuffle(indices.begin(), indices.end(), rng);
-
-    std::vector<cv::Vec3b> restored(totalPixels);
-
-    for (int i = 0; i < totalPixels; ++i) {
-        int srcRow = i / cols;
-        int srcCol = i % cols;
-        int dstIdx = indices[i];
-        restored[dstIdx] = inputImage.at<cv::Vec3b>(srcRow, srcCol);
+    int total = input.width * input.height;
+    std::vector<std::array<unsigned char,3>> pixels(total);
+    for (int i = 0; i < total; ++i) {
+        pixels[i] = { input.pixels[3*i], input.pixels[3*i+1], input.pixels[3*i+2] };
     }
+    std::vector<int> order(total);
+    std::iota(order.begin(), order.end(), 0);
+    std::mt19937 gen(seedFromKey(key));
+    std::ranges::shuffle(order.begin(), order.end(), gen);
 
-    for (int i = 0; i < totalPixels; ++i) {
-        int dstRow = i / cols;
-        int dstCol = i % cols;
-        outputImage.at<cv::Vec3b>(dstRow, dstCol) = restored[i];
+    output.width = input.width;
+    output.height = input.height;
+    output.channels = 3;
+    output.pixels.resize(total * 3);
+    for (int i = 0; i < total; ++i) {
+        const auto &src = pixels[i];
+        int dst = order[i];
+        output.pixels[3*dst]   = src[0];
+        output.pixels[3*dst+1] = src[1];
+        output.pixels[3*dst+2] = src[2];
     }
 }

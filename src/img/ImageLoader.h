@@ -1,10 +1,12 @@
 #pragma once
+
+#include "Image.h"
 #include <filesystem>
-#include <string>
-#include <opencv2/opencv.hpp>
 
 class ImageLoader {
 public:
-    static cv::Mat loadImage(const std::filesystem::path &path);
-    static void saveImage(const std::filesystem::path &path, const cv::Mat &image, bool hash);
+    static Image loadImage(const std::filesystem::path& path);
+    static void saveImage(const std::filesystem::path& path,
+                          const Image& img,
+                          bool hash = false);
 };

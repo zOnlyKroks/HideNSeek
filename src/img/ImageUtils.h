@@ -1,13 +1,13 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include "Image.h"
 #include <string>
 
 namespace ImageUtils {
-
-    void printImageInfo(const cv::Mat& img, const std::string& name = "");
-
-    void printHistogram(const cv::Mat& img,
-                        int bins,
-                        int chartHeight);
+    /**
+     * Prints basic information about an Image object.
+     * @param img   Input Image struct
+     * @param name  Optional name prefix
+     */
+    void printImageInfo(const Image& img, const std::string& name = "");
 }

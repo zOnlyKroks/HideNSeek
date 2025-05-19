@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ImageCryptoApp.h"
 
 int main(const int argc, char** argv) {

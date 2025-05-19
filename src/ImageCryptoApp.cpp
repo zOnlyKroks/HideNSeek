@@ -4,6 +4,7 @@
 
 #include "ImageCryptoApp.h"
 #include <cxxopts.hpp>
+#include <iostream>
 
 #include "crypt/impl/XORAlgorithm.h"
 #include "img/ImageLoader.h"
@@ -65,7 +66,6 @@ void ImageCryptoApp::run(const int argc, char **argv) {
 
     if (debug) {
         ImageUtils::printImageInfo(workImage, "Debug Image Info");
-        ImageUtils::printHistogram(workImage, histoBin, histoChartHeight);
     }
 }
 
@@ -78,7 +78,7 @@ void ImageCryptoApp::processImageWithAlgorithm() {
     const std::string algoName = result["encryptAlgorithm"].as<std::string>();
     const std::string key = "cannotBeEmptyMyAss"; // TODO: replace with CLI key param
 
-    auto algorithm = getAlgorithm(algoName);
+    const auto algorithm = getAlgorithm(algoName);
     if (!algorithm) {
         std::cerr << "Unknown algorithm: " << algoName << std::endl;
         throw std::runtime_error("Unknown algorithm: " + algoName);

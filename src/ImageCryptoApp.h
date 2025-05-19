@@ -24,8 +24,8 @@ public:
     int histoBin = 64;
     int histoChartHeight = 20;
 
-    cv::Mat workImage;
-    cv::Mat outImage;
+    Image workImage;
+    Image outImage;
 
 private:
     std::shared_ptr<CryptoAlgorithm> getAlgorithm(const std::string& name);
