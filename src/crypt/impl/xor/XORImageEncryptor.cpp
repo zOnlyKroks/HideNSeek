@@ -9,8 +9,6 @@ static uint8_t byteFromKey(const std::string& key, const int pos) {
 void XORImageEncryptor::encrypt(const Image& input, Image& output, const std::string& key) {
     if (input.pixels.empty())
         throw std::runtime_error("Input image is empty.");
-    if (input.channels != 3)
-        throw std::runtime_error("Only 3-channel images supported.");
 
     const int totalBytes = input.width * input.height * input.channels;
     output.width = input.width;

@@ -1,0 +1,23 @@
+#include "AddBitImageEncryptor.h"
+
+void AddBitImageEncryptor::encrypt(const Image& input, Image& output, const std::string& key) {
+    output = Image(input.width, input.height, input.channels);
+    for (int y = 0; y < input.height; ++y) {
+        for (int x = 0; x < input.width; ++x) {
+            for (int c = 0; c < input.channels; ++c) {
+                output.getPixel(x, y, c) = input.getPixel(x, y, c) + 1; // overflow wraps mod 256 automatically for uint8_t
+            }
+        }
+    }
+}
+
+void AddBitImageEncryptor::decrypt(const Image& input, Image& output, const std::string& key) {
+    output = Image(input.width, input.height, input.channels);
+    for (int y = 0; y < input.height; ++y) {
+        for (int x = 0; x < input.width; ++x) {
+            for (int c = 0; c < input.channels; ++c) {
+                output.getPixel(x, y, c) = input.getPixel(x, y, c) - 1; // underflow wraps mod 256 automatically for uint8_t
+            }
+        }
+    }
+}

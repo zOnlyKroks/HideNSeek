@@ -9,4 +9,5 @@ public:
     virtual void encrypt(const Image& input, Image& output, const std::string& key) = 0;
     virtual void decrypt(const Image& input, Image& output, const std::string& key) = 0;
     [[nodiscard]] virtual std::string name() const = 0;
+    [[nodiscard]] virtual std::vector<std::string> getEncryptionSteps(const Image& in) const = 0;
 };
