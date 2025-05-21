@@ -11,10 +11,9 @@ namespace {
     }
 
     unsigned int parseRotationAmount(const std::string& key) {
-        size_t hashed = std::hash<std::string>{}(key);
-        std::string hashStr = std::to_string(hashed);
+        const size_t hashed = std::hash<std::string>{}(key);
 
-        for (char c : hashStr) {
+        for (const std::string hashStr = std::to_string(hashed); const char c : hashStr) {
             if (c >= '1' && c <= '7') {
                 return static_cast<unsigned int>(c - '0');
             }
@@ -23,25 +22,25 @@ namespace {
     }
 }
 
-void RotNImageEncryptor::encrypt(const Image& in, Image& out, const std::string& key) {
-    unsigned int n = parseRotationAmount(key);
-    out = Image(in.width, in.height, in.channels);
-    for (int y = 0; y < in.height; ++y) {
-        for (int x = 0; x < in.width; ++x) {
-            for (int c = 0; c < in.channels; ++c) {
-                out.getPixel(x, y, c) = rotateLeft(in.getPixel(x, y, c), n);
+void RotNImageEncryptor::encrypt(const Image& input, Image& output, const std::string& key) {
+    const unsigned int n = parseRotationAmount(key);
+    output = Image(input.width, input.height, input.channels);
+    for (int y = 0; y < input.height; ++y) {
+        for (int x = 0; x < input.width; ++x) {
+            for (int c = 0; c < input.channels; ++c) {
+                output.getPixel(x, y, c) = rotateLeft(input.getPixel(x, y, c), n);
             }
         }
     }
 }
 
-void RotNImageEncryptor::decrypt(const Image& in, Image& out, const std::string& key) {
-    unsigned int n = parseRotationAmount(key);
-    out = Image(in.width, in.height, in.channels);
-    for (int y = 0; y < in.height; ++y) {
-        for (int x = 0; x < in.width; ++x) {
-            for (int c = 0; c < in.channels; ++c) {
-                out.getPixel(x, y, c) = rotateRight(in.getPixel(x, y, c), n);
+void RotNImageEncryptor::decrypt(const Image& input, Image& output, const std::string& key) {
+    const unsigned int n = parseRotationAmount(key);
+    output = Image(input.width, input.height, input.channels);
+    for (int y = 0; y < input.height; ++y) {
+        for (int x = 0; x < input.width; ++x) {
+            for (int c = 0; c < input.channels; ++c) {
+                output.getPixel(x, y, c) = rotateRight(input.getPixel(x, y, c), n);
             }
         }
     }

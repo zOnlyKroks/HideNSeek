@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(lodepng CONFIG REQUIRED)   # provides target: lodepng or lodepng::lodepng
 find_package(OpenSSL REQUIRED)          # provides OpenSSL::SSL, OpenSSL::Crypto
 find_package(cxxopts CONFIG REQUIRED)   # provides cxxopts::cxxopts
+find_package(ZLIB REQUIRED)
 
 # -----------------------------
 # Gather sources
@@ -33,6 +34,7 @@ target_link_libraries(HideNSeek
         OpenSSL::Crypto     # Crypto functions
         cxxopts::cxxopts    # CLI options parsing
         lodepng             # PNG read/write + metadata
+        ZLIB::ZLIB
 )
 
 # If your package provides the target under the namespace form, you can also try:

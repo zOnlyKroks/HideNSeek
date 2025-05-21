@@ -57,4 +57,7 @@ namespace ImageUtils {
      * @return The extracted text
      */
     std::string textFromImage(const Image& img);
+
+    std::vector<unsigned char> serializeImage(const Image& img);
+    bool deserializeImage(const std::vector<unsigned char>& data, Image& img);
 }

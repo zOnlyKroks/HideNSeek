@@ -7,7 +7,12 @@ int main(const int argc, char** argv) {
     ImageCryptoApp app;
     app.registerAlgorithms();
     app.run(argc, argv);
-    app.processImageWithAlgorithm();
+
+    if (app.isInSteganographyMode()) {
+        app.processSteganography();
+    } else {
+        app.processImageWithAlgorithm();
+    }
 
     return 0;
 }

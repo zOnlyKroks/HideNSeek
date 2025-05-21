@@ -20,12 +20,20 @@ struct Image {
     [[nodiscard]] int getWidth() const { return width; }
     [[nodiscard]] int getHeight() const { return height; }
 
-    [[nodiscard]] unsigned char& getPixel(int x, int y, int channel = 0) {
+    [[nodiscard]] unsigned char& getPixel(const int x, const int y, const int channel = 0) {
         return pixels[((y * width) + x) * channels + channel];
     }
 
-    [[nodiscard]] unsigned char getPixel(int x, int y, int channel = 0) const {
+    [[nodiscard]] unsigned char getPixel(const int x, const int y, const int channel = 0) const {
         return pixels[((y * width) + x) * channels + channel];
+    }
+
+    [[nodiscard]] std::vector<unsigned char> getPixels() const {
+        return pixels;
+    }
+
+    void setPixels(const std::vector<unsigned char>& toSet) {
+        pixels = toSet;
     }
 
     // Adds a metadata entry
@@ -35,13 +43,13 @@ struct Image {
 
     // Gets a metadata entry if it exists, empty string otherwise
     [[nodiscard]] std::string getMetadataValue(const std::string& key) const {
-        auto it = meta.find(key);
+        const auto it = meta.find(key);
         return (it != meta.end()) ? it->second : "";
     }
 
     // Check if metadata key exists
     [[nodiscard]] bool hasMetadata(const std::string& key) const {
-        return meta.find(key) != meta.end();
+        return meta.contains(key);
     }
 
     // Remove a metadata entry
@@ -54,7 +62,7 @@ struct Image {
         meta.clear();
     }
 
-    explicit Image(int w = 0, int h = 0, int c = 1)
+    explicit Image(const int w = 0, const int h = 0, const int c = 1)
       : width(w), height(h), channels(c),
         pixels(static_cast<size_t>(w) * h * c, 0) {}
 

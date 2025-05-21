@@ -11,16 +11,16 @@ std::vector<int> SwapChannelsImageEncryptor::getChannelOrder(const std::string& 
     std::iota(order.begin(), order.end(), 0);
 
     // Simple shuffle seeded by hash of key
-    size_t seed = std::hash<std::string>{}(key);
+    const size_t seed = std::hash<std::string>{}(key);
     std::mt19937 rng(static_cast<uint32_t>(seed));
-    std::shuffle(order.begin(), order.end(), rng);
+    std::ranges::shuffle(order, rng);
 
     return order;
 }
 
 void SwapChannelsImageEncryptor::encrypt(const Image& input, Image& output, const std::string& key) {
     output = Image(input.width, input.height, input.channels);
-    auto order = getChannelOrder(key, input.channels);
+    const auto order = getChannelOrder(key, input.channels);
 
     for (int y = 0; y < input.height; ++y) {
         for (int x = 0; x < input.width; ++x) {
@@ -33,7 +33,7 @@ void SwapChannelsImageEncryptor::encrypt(const Image& input, Image& output, cons
 
 void SwapChannelsImageEncryptor::decrypt(const Image& input, Image& output, const std::string& key) {
     output = Image(input.width, input.height, input.channels);
-    auto order = getChannelOrder(key, input.channels);
+    const auto order = getChannelOrder(key, input.channels);
 
     // invert permutation
     std::vector<int> inverse(input.channels);

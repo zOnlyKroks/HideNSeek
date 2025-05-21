@@ -2,6 +2,7 @@
 #include "./util/Base64.h"
 
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -18,7 +19,7 @@ namespace ImageUtils {
         // Print metadata keys if available
         if (!img.metadata().empty()) {
             std::cout << "  Metadata keys:";
-            for (const auto& [key, _] : img.metadata()) {
+            for (const auto &key: img.metadata() | std::views::keys) {
                 std::cout << " " << key;
             }
             std::cout << "\n";
@@ -51,7 +52,6 @@ namespace ImageUtils {
                 result.pixels[i * 3 + 0] = src.pixels[i * 4 + 0]; // R
                 result.pixels[i * 3 + 1] = src.pixels[i * 4 + 1]; // G
                 result.pixels[i * 3 + 2] = src.pixels[i * 4 + 2]; // B
-                // Alpha channel is discarded
             }
         }
 
@@ -119,8 +119,7 @@ namespace ImageUtils {
         std::getline(ss, remaining);
 
         // Split pixel data from metadata if present
-        size_t metaPos = remaining.find("!META!");
-        if (metaPos != std::string::npos) {
+        if (size_t metaPos = remaining.find("!META!"); metaPos != std::string::npos) {
             encodedPixels = remaining.substr(0, metaPos);
             metadataSection = remaining.substr(metaPos + 6); // Skip '!META!'
         } else {
@@ -144,8 +143,7 @@ namespace ImageUtils {
             while (std::getline(metaSS, metaPair, ';')) {
                 if (metaPair.empty()) continue;
 
-                size_t colonPos = metaPair.find(':');
-                if (colonPos != std::string::npos) {
+                if (size_t colonPos = metaPair.find(':'); colonPos != std::string::npos) {
                     std::string encodedKey = metaPair.substr(0, colonPos);
                     std::string encodedValue = metaPair.substr(colonPos + 1);
 
@@ -161,9 +159,8 @@ namespace ImageUtils {
     }
 
     Image textToImage(const std::string& text) {
-        // Simple encoding: create a 1-pixel-tall image with enough width to hold text
         const int width = static_cast<int>(text.length());
-        const int height = 1;
+        constexpr int height = 1;
 
         Image result(width, height, 1);
 
@@ -171,7 +168,6 @@ namespace ImageUtils {
             result.pixels[i] = static_cast<unsigned char>(text[i]);
         }
 
-        // Add metadata indicating this is text
         result.metadata()["TEXT"] = "1";
 
         return result;
@@ -186,13 +182,58 @@ namespace ImageUtils {
         result.reserve(img.width * img.height);
 
         for (int i = 0; i < img.width * img.height; ++i) {
-            char c = static_cast<char>(img.pixels[i]);
-            // Filter out non-printable characters or nulls
-            if (c >= 32 && c <= 126) {
+            if (const char c = static_cast<char>(img.pixels[i]); c >= 32 && c <= 126) {
                 result.push_back(c);
             }
         }
 
         return result;
+    }
+
+    std::vector<unsigned char> serializeImage(const Image& img) {
+        std::vector<unsigned char> data;
+
+        auto appendUint32 = [&](const uint32_t val) {
+            for (int i = 0; i < 4; ++i)
+                data.push_back((val >> (i * 8)) & 0xFF);
+        };
+
+        appendUint32(img.getWidth());
+        appendUint32(img.getHeight());
+        appendUint32(img.channels);
+
+        // Append pixel data
+        const auto& pixels = img.getPixels();
+        data.insert(data.end(), pixels.begin(), pixels.end());
+
+        return data;
+    }
+
+    bool deserializeImage(const std::vector<unsigned char>& data, Image& img) {
+        if (data.size() < 12)  // must at least contain width,height,channels
+            return false;
+
+        auto readUint32 = [&](const size_t offset) -> uint32_t {
+            uint32_t val = 0;
+            for (int i = 0; i < 4; ++i) {
+                val |= static_cast<uint32_t>(data[offset + i]) << (i * 8);
+            }
+            return val;
+        };
+
+        const uint32_t width = readUint32(0);
+        const uint32_t height = readUint32(4);
+        const uint32_t channels = readUint32(8);
+
+        constexpr size_t pixelDataStart = 12;
+        const size_t pixelDataSize = width * height * channels;
+
+        if (data.size() < pixelDataStart + pixelDataSize)
+            return false;
+
+        img = Image(width, height, channels);
+        std::copy_n(data.begin() + pixelDataStart, pixelDataSize, img.pixels.begin());
+
+        return true;
     }
 }

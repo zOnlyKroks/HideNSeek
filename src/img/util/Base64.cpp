@@ -9,7 +9,7 @@ const std::string base64_chars =
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
-inline bool is_base64(unsigned char c) {
+inline bool is_base64(const unsigned char c) {
     return std::isalnum(c) || (c == '+') || (c == '/');
 }
 
@@ -57,7 +57,7 @@ std::string encode(const std::vector<unsigned char>& data) {
 }
 
 std::vector<unsigned char> decode(const std::string& encoded_string) {
-    size_t in_len = encoded_string.size();
+    const size_t in_len = encoded_string.size();
     int i = 0;
     int in_ = 0;
     unsigned char char_array_4[4], char_array_3[3];
@@ -69,7 +69,7 @@ std::vector<unsigned char> decode(const std::string& encoded_string) {
         if (i == 4) {
             // Convert from base64 encoding to original representation
             for (i = 0; i < 4; ++i)
-                char_array_4[i] = base64_chars.find(char_array_4[i]);
+                char_array_4[i] = base64_chars.find(static_cast<char>(char_array_4[i]));
 
             // Decode 4 characters into 3 bytes
             char_array_3[0] =  (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
@@ -90,7 +90,7 @@ std::vector<unsigned char> decode(const std::string& encoded_string) {
 
         // Convert from base64 encoding to indices
         for (int j = 0; j < i; ++j)
-            char_array_4[j] = base64_chars.find(char_array_4[j]);
+            char_array_4[j] = base64_chars.find(static_cast<char>(char_array_4[i]));
 
         // Decode the characters we have
         char_array_3[0] =  (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
@@ -107,14 +107,14 @@ std::vector<unsigned char> decode(const std::string& encoded_string) {
 
 // Helper to encode from text string (UTF-8 assumed)
 std::string encodeString(const std::string& text) {
-    std::vector<unsigned char> data(text.begin(), text.end());
+    const std::vector<unsigned char> data(text.begin(), text.end());
     return encode(data);
 }
 
 // Helper to decode to text string (may contain binary data, so use carefully)
 std::string decodeToString(const std::string& encoded_string) {
     std::vector<unsigned char> decoded = decode(encoded_string);
-    return std::string(decoded.begin(), decoded.end());
+    return {decoded.begin(), decoded.end()};
 }
 
 } // namespace Base64
