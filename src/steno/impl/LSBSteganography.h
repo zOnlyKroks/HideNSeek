@@ -21,6 +21,8 @@ public:
 
     size_t maxHiddenDataSize(const Image& carrierImage) const override;
 
+    bool canEmbedData(const Image& carrierImage, const Image& imageToHide, const std::string& password = "") const override;
+
     std::string name() const override { return "lsb"; }
 
     std::string description() const override {

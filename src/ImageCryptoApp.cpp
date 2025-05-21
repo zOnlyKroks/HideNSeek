@@ -13,6 +13,7 @@
 #include "img/ImageLoader.h"
 #include "img/ImageUtils.h"
 #include "steno/impl/LSBSteganography.h"
+#include "steno/impl/pvd/PVDSteganography.h"
 
 ImageCryptoApp::ImageCryptoApp()
     : options("MyProgram", "One line description of MyProgram"), workImage(), outImage() {
@@ -96,6 +97,7 @@ void ImageCryptoApp::registerAlgorithms() {
     const auto perm = std::make_shared<PixelPermutationEncryptor>();
 
     const auto lsb = std::make_shared<LSBSteganography>(3);
+    const auto pvd = std::make_shared<PVDSteganography>();
 
     algorithms[add->name()] = add;
     algorithms[xorAlgo->name()] = xorAlgo;
@@ -105,6 +107,7 @@ void ImageCryptoApp::registerAlgorithms() {
     algorithms[perm->name()] = perm;
 
     stegAlgorithms[lsb->name()] = lsb;
+    stegAlgorithms[pvd->name()] = pvd;
 }
 
 void ImageCryptoApp::processImageWithAlgorithm() {
@@ -198,12 +201,11 @@ void ImageCryptoApp::hide() {
         hideImage = ImageLoader::loadImage(hiddenData);
         if (debug) ImageUtils::printImageInfo(hideImage, "Debug Hide Image Info");
 
-        size_t required = static_cast<size_t>(hideImage.getWidth()) * hideImage.getHeight() * hideImage.channels;
-        size_t capacity = steg->maxHiddenDataSize(workImage);
-        std::cout << "Carrier capacity: " << capacity << " bytes | Required: " << required << " bytes" << std::endl;
-        if (required > capacity) {
-            throw std::runtime_error("Carrier image does not have enough capacity to hold the hidden image.");
+        if (!steg->canEmbedData(workImage, hideImage, stegPassword)) {
+            throw std::runtime_error("Steganography failed: Image is too small to hide data.");
         }
+
+        std::cout << "Image is large enough to hide data." << std::endl;
 
         if (bool success = steg->hideImage(workImage, hideImage, outImage, stegPassword); !success) {
             throw std::runtime_error("Steganography failed: Could not hide image.");
@@ -233,7 +235,7 @@ void ImageCryptoApp::hide() {
 }
 
 void ImageCryptoApp::extract() {
-    auto steg = getSteganographyAlgorithm(stegAlgo);
+    const auto steg = getSteganographyAlgorithm(stegAlgo);
     if (!steg) {
         throw std::runtime_error("Steganography algorithm not found: " + stegAlgo);
     }

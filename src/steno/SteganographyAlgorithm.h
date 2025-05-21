@@ -70,4 +70,6 @@ public:
      * @return Maximum number of bytes that can be hidden
      */
     virtual size_t maxHiddenDataSize(const Image& carrierImage) const = 0;
+
+    virtual bool canEmbedData(const Image& carrierImage, const Image& imageToHide, const std::string& password = "") const = 0;
 };
