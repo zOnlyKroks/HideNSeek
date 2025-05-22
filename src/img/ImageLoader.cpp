@@ -12,7 +12,6 @@
 #include "ImageUtils.h"
 
 static std::string hashImage(const Image& image) {
-    // Simple hash over image bytes using std::hash
     const auto size = image.pixels.size();
     const auto dataPtr = reinterpret_cast<const char*>(image.pixels.data());
     const std::size_t h = std::hash<std::string_view>{}(std::string_view(dataPtr, size));
@@ -22,15 +21,12 @@ static std::string hashImage(const Image& image) {
     return oss.str();
 }
 
-// Reads metadata from a separate file with the same base name as the image
 void loadMetadataFromFile(const std::filesystem::path &path, Image &img) {
-    // Create metadata file path
     auto metaPath = path;
     metaPath.replace_extension(path.extension().string() + ".meta");
 
-    // Check if metadata file exists
     if (!std::filesystem::exists(metaPath)) {
-        return; // No metadata file
+        return;
     }
 
     std::ifstream metaFile(metaPath);
@@ -41,12 +37,9 @@ void loadMetadataFromFile(const std::filesystem::path &path, Image &img) {
 
     std::string line;
     while (std::getline(metaFile, line)) {
-        // Skip empty lines
         if (line.empty()) continue;
 
-        // Parse key-value pairs
-        size_t separatorPos = line.find('=');
-        if (separatorPos != std::string::npos) {
+        if (size_t separatorPos = line.find('='); separatorPos != std::string::npos) {
             std::string key = line.substr(0, separatorPos);
             std::string value = line.substr(separatorPos + 1);
             img.metadata()[key] = value;
@@ -56,13 +49,11 @@ void loadMetadataFromFile(const std::filesystem::path &path, Image &img) {
     std::cout << "Loaded " << img.metadata().size() << " metadata entries from " << metaPath << std::endl;
 }
 
-// Saves metadata to a separate file with the same base name as the image
 void saveMetadataToFile(const std::filesystem::path &path, const Image &img) {
     if (img.metadata().empty()) {
-        return; // No metadata to save
+        return;
     }
 
-    // Create metadata file path
     auto metaPath = path;
     metaPath.replace_extension(path.extension().string() + ".meta");
 
@@ -96,7 +87,6 @@ Image ImageLoader::loadImage(const std::filesystem::path &path) {
     img.pixels.assign(data, data + (w * h * 3));
     stbi_image_free(data);
 
-    // Load metadata from companion file
     loadMetadataFromFile(path, img);
 
     std::cout << "Successfully loaded image via stb: " << path
@@ -126,7 +116,6 @@ void ImageLoader::saveImage(const std::filesystem::path &path,
               << ", channels=" << img.channels
               << ", metadata entries=" << img.metadata().size() << ")" << std::endl;
 
-    // Write PNG losslessly
     if (!stbi_write_png(outPath.c_str(),
                         img.width, img.height, img.channels,
                         img.pixels.data(),
@@ -135,7 +124,6 @@ void ImageLoader::saveImage(const std::filesystem::path &path,
         throw std::runtime_error("Error: could not write image to " + outPath);
     }
 
-    // Save metadata to companion file
     saveMetadataToFile(outPath, img);
 
     std::cout << "Successfully saved image via stb: " << outPath << std::endl;

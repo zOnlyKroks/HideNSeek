@@ -5,38 +5,48 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "../../img/ImageUtils.h"
-#include "../../util/aes/AES256Encryptor.h"
+#include "../../../img/ImageUtils.h"
+#include "../../../util/aes/AES256Encryptor.h"
 
-LSBSteganography::LSBSteganography(int bitsPerChannel) : bitsPerChannel(std::clamp(bitsPerChannel, 1, 4)) {}
+LSBSteganography::LSBSteganography(const int bitsPerChannel) : bitsPerChannel(std::clamp(bitsPerChannel, 1, 4)) {}
 
 size_t LSBSteganography::maxHiddenDataSize(const Image& carrierImage) const {
     const int channels = carrierImage.channels;
-    size_t totalPixels = carrierImage.getWidth() * carrierImage.getHeight();
-    size_t totalBits = totalPixels * channels * bitsPerChannel;
-    return (totalBits / 8) - 16; // subtract header
+    const size_t totalPixels = carrierImage.getWidth() * carrierImage.getHeight();
+    const size_t totalBits = totalPixels * channels * bitsPerChannel;
+    return (totalBits / 8) - 20;
 }
 
-bool LSBSteganography::canEmbedData(const Image& carrierImage, const Image& imageToHide, const std::string& password) const {
+std::tuple<bool, size_t, size_t> LSBSteganography::canEmbedData(const Image& carrierImage, const Image& imageToHide, const std::string& password) const {
     auto serialized = ImageUtils::serializeImage(imageToHide);
     const std::string dataToHide(serialized.begin(), serialized.end());
 
     const std::vector<unsigned char> data(dataToHide.begin(), dataToHide.end());
-    uLongf originalSize = data.size();
+    const uLongf originalSize = data.size();
     uLongf compSize = compressBound(originalSize);
     std::vector<unsigned char> compressed(compSize);
 
-    if (compress(compressed.data(), &compSize, data.data(), originalSize) != Z_OK) return false;
+    if (compress(compressed.data(), &compSize, data.data(), originalSize) != Z_OK) {
+        return std::make_tuple(false, 0, 0);
+    }
+
     compressed.resize(compSize);
 
-    std::vector<unsigned char> salt(8);
-    if (!RAND_bytes(salt.data(), salt.size())) return false;
+    std::vector<unsigned char> salt(16);
+    std::vector<unsigned char> iv(16);
+    if (!RAND_bytes(salt.data(), 16) || !RAND_bytes(iv.data(), 16)) {
+        throw std::runtime_error("Failed to generate random salt or IV");
+    }
 
-    AES256Encryptor aes(password, salt);
-    std::vector<unsigned char> encrypted = aes.encrypt(compressed);
-    encrypted.insert(encrypted.begin(), salt.begin(), salt.end());
+    const AES256Encryptor aes(password, salt);
 
-    return encrypted.size() <= maxHiddenDataSize(carrierImage);
+    const std::vector<unsigned char> encrypted = aes.encrypt(compressed, iv);
+
+    size_t totalSize = 16 + 16 + encrypted.size();
+
+    return std::make_tuple(totalSize <= maxHiddenDataSize(carrierImage),
+                           totalSize,
+                           maxHiddenDataSize(carrierImage));
 }
 
 void LSBSteganography::embedByte(std::vector<unsigned char>& pixels, size_t& index, unsigned char byte) const {
@@ -86,19 +96,28 @@ bool LSBSteganography::hideData(const Image& carrierImage, const std::string& da
     if (compress(compressed.data(), &compSize, data.data(), originalSize) != Z_OK) return false;
     compressed.resize(compSize);
 
-    std::vector<unsigned char> salt(8);
-    if (!RAND_bytes(salt.data(), salt.size())) return false;
+    std::vector<unsigned char> salt(16);
+    std::vector<unsigned char> iv(16);
+    if (!RAND_bytes(salt.data(), 16) || !RAND_bytes(iv.data(), 16)) {
+        throw std::runtime_error("Failed to generate random salt or IV");
+    }
 
     const AES256Encryptor aes(password, salt);
-    std::vector<unsigned char> encrypted = aes.encrypt(compressed);
-    encrypted.insert(encrypted.begin(), salt.begin(), salt.end());
+
+    std::vector<unsigned char> encrypted = aes.encrypt(compressed, iv);
+
+    std::vector<unsigned char> fullData;
+    fullData.reserve(16 + 16 + encrypted.size());
+    fullData.insert(fullData.end(), salt.begin(), salt.end());
+    fullData.insert(fullData.end(), iv.begin(), iv.end());
+    fullData.insert(fullData.end(), encrypted.begin(), encrypted.end());
 
     resultImage = carrierImage;
     std::vector<unsigned char> pixels = resultImage.getPixels();
     size_t index = 0;
 
-    embedHeader(pixels, index, static_cast<uint32_t>(encrypted.size()));
-    for (unsigned char byte : encrypted) embedByte(pixels, index, byte);
+    embedHeader(pixels, index, static_cast<uint32_t>(fullData.size()));
+    for (unsigned char byte : fullData) embedByte(pixels, index, byte);
 
     resultImage.setPixels(pixels);
     return true;
@@ -112,22 +131,25 @@ bool LSBSteganography::extractData(const Image& steganoImage, std::string& extra
     extractHeader(pixels, index, dataSize);
     if (dataSize == 0 || dataSize > pixels.size()) return false;
 
-    std::vector<unsigned char> encrypted;
-    encrypted.reserve(dataSize);
+    std::vector<unsigned char> fullData;
+    fullData.reserve(dataSize);
     for (uint32_t i = 0; i < dataSize && index < pixels.size(); ++i) {
-        encrypted.push_back(extractByte(pixels, index));
+        fullData.push_back(extractByte(pixels, index));
     }
 
-    if (encrypted.size() < 8) return false;
-    const std::vector salt(encrypted.begin(), encrypted.begin() + 8);
-    encrypted.erase(encrypted.begin(), encrypted.begin() + 8);
+    if (fullData.size() < 32) return false;
 
-    if (encrypted.size() % 16 != 0) return false;
+    const std::vector salt(fullData.begin(), fullData.begin() + 16);
+    const std::vector iv(fullData.begin() + 16, fullData.begin() + 32);
+    const std::vector encrypted(fullData.begin() + 32, fullData.end());
+
+    if (encrypted.empty()) return false;
 
     const AES256Encryptor aes(password, salt);
     std::vector<unsigned char> compressed;
+
     try {
-        compressed = aes.decrypt(encrypted);
+        compressed = aes.decrypt(encrypted, iv);
     } catch (...) {
         return false;
     }

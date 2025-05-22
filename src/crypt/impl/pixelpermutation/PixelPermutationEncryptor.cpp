@@ -9,7 +9,6 @@ void PixelPermutationEncryptor::encrypt(const Image& input, Image& output, const
     const int channels = input.channels;
     const int totalPixels = width * height;
 
-    // Generate permutation
     std::vector<int> perm(totalPixels);
     for (int i = 0; i < totalPixels; ++i) perm[i] = i;
 
@@ -19,7 +18,6 @@ void PixelPermutationEncryptor::encrypt(const Image& input, Image& output, const
 
     output = Image(width, height, channels);
 
-    // Write pixels permuted
     for (int i = 0; i < totalPixels; ++i) {
         const int srcIndex = i;
         const int dstIndex = perm[i];
@@ -41,7 +39,6 @@ void PixelPermutationEncryptor::decrypt(const Image& input, Image& output, const
     const int channels = input.channels;
     const int totalPixels = width * height;
 
-    // Generate permutation
     std::vector<int> perm(totalPixels);
     for (int i = 0; i < totalPixels; ++i) perm[i] = i;
 
@@ -49,7 +46,6 @@ void PixelPermutationEncryptor::decrypt(const Image& input, Image& output, const
     std::mt19937 rng(static_cast<uint32_t>(seed));
     std::ranges::shuffle(perm, rng);
 
-    // Invert permutation
     std::vector<int> inversePerm(totalPixels);
     for (int i = 0; i < totalPixels; ++i) {
         inversePerm[perm[i]] = i;
@@ -57,9 +53,8 @@ void PixelPermutationEncryptor::decrypt(const Image& input, Image& output, const
 
     output = Image(width, height, channels);
 
-    // Corrected loop: Iterate over each pixel in the encrypted image
     for (int k = 0; k < totalPixels; ++k) {
-        const int dstIndex = inversePerm[k];  // Original position of the pixel at k
+        const int dstIndex = inversePerm[k];
         const int srcX = k % width;
         const int srcY = k / width;
         const int dstX = dstIndex % width;

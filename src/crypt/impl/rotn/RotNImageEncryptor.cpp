@@ -2,11 +2,11 @@
 #include <stdexcept>
 
 namespace {
-    uint8_t rotateLeft(uint8_t byte, unsigned int n) {
+    uint8_t rotateLeft(const uint8_t byte, const unsigned int n) {
         return (byte << n) | (byte >> (8 - n));
     }
 
-    uint8_t rotateRight(uint8_t byte, unsigned int n) {
+    uint8_t rotateRight(const uint8_t byte, const unsigned int n) {
         return (byte >> n) | (byte << (8 - n));
     }
 

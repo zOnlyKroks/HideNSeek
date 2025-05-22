@@ -1,5 +1,5 @@
 #include "ImageUtils.h"
-#include "./util/Base64.h"
+#include "../util/base64/Base64.h"
 
 #include <iostream>
 #include <ranges>
@@ -16,7 +16,6 @@ namespace ImageUtils {
                   << ", channels=" << img.channels
                   << ", metadata=" << img.metadata().size() << "\n";
 
-        // Print metadata keys if available
         if (!img.metadata().empty()) {
             std::cout << "  Metadata keys:";
             for (const auto &key: img.metadata() | std::views::keys) {
@@ -39,15 +38,13 @@ namespace ImageUtils {
         result.pixels.resize(src.width * src.height * 3);
 
         if (src.channels == 1) {
-            // Convert grayscale to RGB
             for (int i = 0; i < src.width * src.height; ++i) {
-                unsigned char gray = src.pixels[i];
+                const unsigned char gray = src.pixels[i];
                 result.pixels[i * 3 + 0] = gray;
                 result.pixels[i * 3 + 1] = gray;
                 result.pixels[i * 3 + 2] = gray;
             }
         } else if (src.channels == 4) {
-            // Convert RGBA to RGB
             for (int i = 0; i < src.width * src.height; ++i) {
                 result.pixels[i * 3 + 0] = src.pixels[i * 4 + 0]; // R
                 result.pixels[i * 3 + 1] = src.pixels[i * 4 + 1]; // G
@@ -55,7 +52,6 @@ namespace ImageUtils {
             }
         }
 
-        // Copy metadata
         for (const auto& [key, value] : src.metadata()) {
             result.metadata()[key] = value;
         }
@@ -64,13 +60,10 @@ namespace ImageUtils {
     }
 
     void embedMetadataImage(Image& targetImage, const std::string& key, const Image& dataImage) {
-        // Serialize the image data to store in metadata
         std::stringstream ss;
 
-        // Store dimensions and format
         ss << dataImage.width << "," << dataImage.height << "," << dataImage.channels << ":";
 
-        // Encode the pixel data in base64
         std::string pixelData(
             reinterpret_cast<const char*>(dataImage.pixels.data()),
             dataImage.pixels.size()
@@ -78,7 +71,6 @@ namespace ImageUtils {
         std::string encodedData = Base64::encodeString(pixelData);
         ss << encodedData;
 
-        // Store metadata if available
         if (!dataImage.metadata().empty()) {
             ss << "!META!";
             for (const auto& [metaKey, metaValue] : dataImage.metadata()) {
@@ -88,7 +80,6 @@ namespace ImageUtils {
             }
         }
 
-        // Store in target image metadata
         targetImage.metadata()[key] = ss.str();
     }
 
@@ -102,7 +93,6 @@ namespace ImageUtils {
         std::stringstream ss(data);
         std::string header, encodedPixels, metadataSection;
 
-        // Parse header
         std::getline(ss, header, ':');
         std::stringstream headerSS(header);
         std::string widthStr, heightStr, channelsStr;
@@ -114,29 +104,24 @@ namespace ImageUtils {
         int height = std::stoi(heightStr);
         int channels = std::stoi(channelsStr);
 
-        // Get remaining content (pixels + metadata)
         std::string remaining;
         std::getline(ss, remaining);
 
-        // Split pixel data from metadata if present
         if (size_t metaPos = remaining.find("!META!"); metaPos != std::string::npos) {
             encodedPixels = remaining.substr(0, metaPos);
-            metadataSection = remaining.substr(metaPos + 6); // Skip '!META!'
+            metadataSection = remaining.substr(metaPos + 6);
         } else {
             encodedPixels = remaining;
         }
 
-        // Decode pixel data
         std::string decodedData = Base64::decodeToString(encodedPixels);
 
-        // Create result image
         Image result(width, height, channels);
         result.pixels.assign(
             reinterpret_cast<const unsigned char*>(decodedData.data()),
             reinterpret_cast<const unsigned char*>(decodedData.data() + decodedData.size())
         );
 
-        // Process metadata if present
         if (!metadataSection.empty()) {
             std::stringstream metaSS(metadataSection);
             std::string metaPair;
@@ -210,7 +195,7 @@ namespace ImageUtils {
     }
 
     bool deserializeImage(const std::vector<unsigned char>& data, Image& img) {
-        if (data.size() < 12)  // must at least contain width,height,channels
+        if (data.size() < 12)
             return false;
 
         auto readUint32 = [&](const size_t offset) -> uint32_t {

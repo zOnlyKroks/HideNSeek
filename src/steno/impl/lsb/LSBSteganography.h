@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "../SteganographyAlgorithm.h"
-#include "../../img/Image.h"
+#include "../../SteganographyAlgorithm.h"
+#include "../../../img/Image.h"
 
 class LSBSteganography final : public SteganographyAlgorithm {
 public:
@@ -21,7 +21,11 @@ public:
 
     size_t maxHiddenDataSize(const Image& carrierImage) const override;
 
-    bool canEmbedData(const Image& carrierImage, const Image& imageToHide, const std::string& password = "") const override;
+    std::tuple<bool, size_t, size_t> canEmbedData(
+    const Image& carrierImage,
+    const Image& imageToHide,
+    const std::string& password = ""
+        ) const override;
 
     std::string name() const override { return "lsb"; }
 

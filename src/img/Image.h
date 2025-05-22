@@ -28,6 +28,10 @@ struct Image {
         return pixels[((y * width) + x) * channels + channel];
     }
 
+    void setPixel(const int x, const int y, const int c, const int px) {
+        pixels[((y * width) + x) * channels + c] = static_cast<unsigned char>(px);
+    }
+
     [[nodiscard]] std::vector<unsigned char> getPixels() const {
         return pixels;
     }
