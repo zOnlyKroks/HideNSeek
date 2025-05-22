@@ -185,6 +185,7 @@ bool PVDSteganography::extractData(const Image& steganoImage, std::string& extra
         }
     }
 
+    done:
     if (extracted.size() < 36) return false;
 
     const std::vector salt(extracted.begin() + 4, extracted.begin() + 20);
