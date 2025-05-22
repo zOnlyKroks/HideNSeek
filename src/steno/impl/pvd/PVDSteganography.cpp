@@ -97,7 +97,7 @@ bool PVDSteganography::hideData(const Image& carrierImage, const std::string& da
 
     std::vector<unsigned char> gray(height * width);
     for (size_t i = 0; i < gray.size(); ++i) {
-        gray[i] = static_cast<unsigned char>(0.299f * pixels[i * 3 + 0] + 0.587f * pixels[i * 3 + 1] + 0.114f * pixels[i * 3 + 2]);
+        gray[i] = static_cast<unsigned char>(0.299f * static_cast<float>(pixels[i * 3 + 0]) + 0.587f * static_cast<float>(pixels[i * 3 + 1]) + 0.114f * static_cast<float>(pixels[i * 3 + 2]));
     }
 
     std::vector<unsigned char> edges(gray.size());
@@ -137,7 +137,7 @@ bool PVDSteganography::extractData(const Image& steganoImage, std::string& extra
 
     std::vector<unsigned char> gray(width * height);
     for (size_t i = 0; i < gray.size(); ++i) {
-        gray[i] = static_cast<unsigned char>(0.299f * pixels[i * 3 + 0] + 0.587f * pixels[i * 3 + 1] + 0.114f * pixels[i * 3 + 2]);
+        gray[i] = static_cast<unsigned char>(0.299f * static_cast<float>(pixels[i * 3 + 0]) + 0.587f * static_cast<float>(pixels[i * 3 + 1]) + 0.114f * static_cast<float>(pixels[i * 3 + 2]));
     }
 
     std::vector<unsigned char> edges(gray.size());
@@ -243,13 +243,13 @@ void PVDSteganography::applySobel(const Image& img, std::vector<unsigned char>& 
                     const int px = x + kx;
                     const int py = y + ky;
                     const int i = (py * width + px) * 3;
-                    const unsigned char gray = static_cast<unsigned char>(
-                        0.299f * pixels[i] + 0.587f * pixels[i + 1] + 0.114f * pixels[i + 2]);
+                    const auto gray = static_cast<unsigned char>(
+                        0.299f * static_cast<float>(pixels[i]) + 0.587f * static_cast<float>(pixels[i + 1]) + 0.114f * static_cast<float>(pixels[i + 2]));
                     gx += kx * gray;
                     gy += ky * gray;
                 }
             }
-            const int mag = std::sqrt(gx * gx + gy * gy);
+            const int mag = static_cast<int>(std::sqrt(gx * gx + gy * gy));
             edges[y * width + x] = (mag > SobelThreshold) ? 255 : 0;
         }
     }

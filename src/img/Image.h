@@ -40,28 +40,23 @@ struct Image {
         pixels = toSet;
     }
 
-    // Adds a metadata entry
     void addMetadata(const std::string& key, const std::string& value) {
         meta[key] = value;
     }
 
-    // Gets a metadata entry if it exists, empty string otherwise
     [[nodiscard]] std::string getMetadataValue(const std::string& key) const {
         const auto it = meta.find(key);
         return (it != meta.end()) ? it->second : "";
     }
 
-    // Check if metadata key exists
     [[nodiscard]] bool hasMetadata(const std::string& key) const {
         return meta.contains(key);
     }
 
-    // Remove a metadata entry
     void removeMetadata(const std::string& key) {
         meta.erase(key);
     }
 
-    // Clear all metadata
     void clearMetadata() {
         meta.clear();
     }
