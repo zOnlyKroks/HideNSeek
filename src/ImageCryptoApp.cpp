@@ -243,8 +243,7 @@ void ImageCryptoApp::extract() {
     std::cout << "Extracting data using " << stegAlgo << " algorithm..." << std::endl;
 
     if (hideAsImage) {
-        bool success = steg->extractImage(workImage, outImage, stegPassword);
-        if (!success || outImage.pixels.empty()) {
+        if (const bool success = steg->extractImage(workImage, outImage, stegPassword); !success || outImage.pixels.empty()) {
             throw std::runtime_error("Steganography extraction failed: No image could be recovered. "
                                      "Make sure the image actually contains hidden data and the password is correct.");
         }
@@ -253,8 +252,7 @@ void ImageCryptoApp::extract() {
         std::cout << "Extracted image saved to: " << outputPath << std::endl;
     } else {
         std::string extracted;
-        bool success = steg->extractData(workImage, extracted, stegPassword);
-        if (!success) {
+        if (const bool success = steg->extractData(workImage, extracted, stegPassword); !success) {
             throw std::runtime_error("Steganography extraction failed: No data could be recovered.");
         }
 
