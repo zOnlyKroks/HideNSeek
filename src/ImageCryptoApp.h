@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <functional>
 
 #include "crypt/CryptoAlgorithm.h"
 #include "img/Image.h"
@@ -13,7 +14,10 @@
 
 class ImageCryptoApp {
 public:
+    using LogFunction = std::function<void(const std::string&)>;
+
     ImageCryptoApp();
+    void setLogFunction(LogFunction logFunc) { logFunction = logFunc; }
 
     void run(int argc, char** argv);
     void registerAlgorithms();
@@ -28,7 +32,7 @@ public:
     void hideSteganographyData();               // New method name
     void extractSteganographyData();            // New method name
 
-    bool isInSteganographyMode() const { return !stegMode.empty(); }
+    [[nodiscard]] bool isInSteganographyMode() const { return !stegMode.empty(); }
 
 private:
     // Algorithm getters
@@ -69,11 +73,12 @@ private:
     std::string hiddenData;
     bool hideAsImage = false;
 
-    // Histogram settings
-    int histoBin = 10;
-    int histoChartHeight = 10;
-
     // Algorithm registries
     std::map<std::string, std::shared_ptr<CryptoAlgorithm>> algorithms;
     std::map<std::string, std::shared_ptr<SteganographyAlgorithm>> stegAlgorithms;
+
+    // Logging
+    LogFunction logFunction;
+
+    void log(const std::string& message) const;
 };

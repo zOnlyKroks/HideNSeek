@@ -4,45 +4,49 @@ project(HideNSeek LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# -----------------------------
-# Find dependencies
-# -----------------------------
-find_package(lodepng CONFIG REQUIRED)   # provides target: lodepng or lodepng::lodepng
-find_package(OpenSSL REQUIRED)          # provides OpenSSL::SSL, OpenSSL::Crypto
-find_package(cxxopts CONFIG REQUIRED)   # provides cxxopts::cxxopts
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(OpenSSL REQUIRED)
+find_package(cxxopts CONFIG REQUIRED)
+find_package(lodepng CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 
-# -----------------------------
-# Gather sources
-# -----------------------------
+# Only find OpenGL on non-Apple platforms
+if(NOT APPLE)
+    find_package(OpenGL REQUIRED)
+endif()
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 file(GLOB_RECURSE SOURCES
         src/*.cpp
         src/*.h
+        src/*.ui
 )
 
-# -----------------------------
-# Define executable
-# -----------------------------
 add_executable(HideNSeek ${SOURCES})
 
-# -----------------------------
-# Link libraries
-# -----------------------------
+# Base libraries for all platforms
 target_link_libraries(HideNSeek
         PRIVATE
-        OpenSSL::SSL        # SSL support
-        OpenSSL::Crypto     # Crypto functions
-        cxxopts::cxxopts    # CLI options parsing
-        lodepng             # PNG read/write + metadata
+        Qt6::Widgets
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        cxxopts::cxxopts
+        lodepng
         ZLIB::ZLIB
 )
 
-# If your package provides the target under the namespace form, you can also try:
-#    lodepng::lodepng
-# instead of just 'lodepng' above.
+# Platform-specific linking
+if(APPLE)
+    # Use native macOS frameworks instead of OpenGL::GL
+    find_library(COCOA_LIBRARY Cocoa)
+    find_library(OpenGL_LIBRARY OpenGL)
+    target_link_libraries(HideNSeek PRIVATE ${OpenGL_LIBRARY} ${COCOA_LIBRARY})
+else()
+    # Use OpenGL::GL on other platforms
+    target_link_libraries(HideNSeek PRIVATE OpenGL::GL)
+endif()
 
-# -----------------------------
-# Installation (optional)
-# -----------------------------
-install(TARGETS HideNSeek
-        RUNTIME DESTINATION bin)
+install(TARGETS HideNSeek RUNTIME DESTINATION bin)

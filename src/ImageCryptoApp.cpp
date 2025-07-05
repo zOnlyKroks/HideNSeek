@@ -3,8 +3,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <QDebug>
 
-// Algorithm includes
 #include "crypt/impl/addbit/AddBitImageEncryptor.h"
 #include "crypt/impl/aes256/AES256ImageEncryptor.h"
 #include "crypt/impl/bitnot/BitwiseNotImageEncryptor.h"
@@ -15,6 +15,14 @@
 #include "img/ImageLoader.h"
 #include "img/ImageUtils.h"
 #include "steno/impl/lsb/LSBSteganography.h"
+
+void ImageCryptoApp::log(const std::string& message) const {
+    if (logFunction) {
+        logFunction(message);
+    } else {
+        qDebug() << message.c_str();
+    }
+}
 
 ImageCryptoApp::ImageCryptoApp()
     : options("HideNSeek", "Image encryption and steganography tool") {
@@ -40,8 +48,8 @@ void ImageCryptoApp::run(const int argc, char** argv) {
 
         debug = result["debug"].as<bool>();
         if (debug) {
-            std::cout << "ImageCryptoApp starting." << std::endl;
-            std::cout << "Debug mode is enabled." << std::endl;
+            log("ImageCryptoApp starting.");
+            log("Debug mode is enabled.");
         }
 
         registerAlgorithms();
@@ -54,7 +62,7 @@ void ImageCryptoApp::run(const int argc, char** argv) {
         processEncryptionMode();
 
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        log("Error: " + std::string(e.what()));
         throw;
     }
 }
@@ -150,7 +158,7 @@ void ImageCryptoApp::processImageEncryption() {
     ImageLoader::saveImage(outputPath, outImage, false);
 
     if (debug) {
-        std::cout << "Process completed. Output saved to: " << outputPath << std::endl;
+        log("Process completed. Output saved to: " + outputPath);
     }
 }
 
@@ -196,7 +204,7 @@ Image ImageCryptoApp::applyEncryptionStep(const Image& input, const std::string&
         std::string key = param.empty() ? masterPassword : param;
 
         if (debug) {
-            std::cout << "Step: " << algoName << " (" << (i + 1) << "/" << count << ")" << std::endl;
+            log("Step: " + algoName + " (" + std::to_string(i + 1) + "/" + std::to_string(count) + ")");
         }
 
         if (isDecrypt) {
@@ -218,7 +226,7 @@ Image ImageCryptoApp::applyEncryptionStep(const Image& input, const std::string&
 void ImageCryptoApp::recoverEncryptionSteps(const Image& image) {
     try {
         if (debug) {
-            std::cout << "Attempting to recover encryption steps from metadata..." << std::endl;
+            log("Attempting to recover encryption steps from metadata...");
         }
 
         Image encImg = ImageUtils::extractMetadataImage(image, "enc_steps_img");
@@ -234,7 +242,7 @@ void ImageCryptoApp::recoverEncryptionSteps(const Image& image) {
         std::string recovered = ImageUtils::textFromImage(decImg);
 
         if (debug) {
-            std::cout << "Recovered steps: " << recovered << std::endl;
+            log("Recovered steps: " + recovered);
         }
 
         // Parse steps
@@ -265,7 +273,7 @@ void ImageCryptoApp::embedEncryptionMetadata() {
         if (stepsStr.empty()) return;
 
         if (debug) {
-            std::cout << "Embedding metadata: " << stepsStr << std::endl;
+            log("Embedding metadata: " + stepsStr);
         }
 
         const Image textImg = ImageUtils::textToImage(stepsStr);
@@ -280,7 +288,7 @@ void ImageCryptoApp::embedEncryptionMetadata() {
 
         ImageUtils::embedMetadataImage(outImage, "enc_steps_img", encImg);
     } catch (const std::exception& e) {
-        std::cerr << "Warning: Failed to embed metadata: " << e.what() << std::endl;
+        log("Warning: Failed to embed metadata: " + std::string(e.what()));
     }
 }
 
@@ -301,7 +309,7 @@ void ImageCryptoApp::hideSteganographyData() {
     }
 
     if (debug) {
-        std::cout << "Hiding data using " << stegAlgo << " algorithm..." << std::endl;
+        log("Hiding data using " + stegAlgo + " algorithm...");
     }
 
     bool success = false;
@@ -312,9 +320,9 @@ void ImageCryptoApp::hideSteganographyData() {
 
         const auto res = steg->canEmbedData(workImage, hideImage, stegPassword);
 
-        std::cout << "Can hide image: " << std::get<0>(res) << std::endl;
-        std::cout << "Data size: " << std::get<1>(res) << std::endl;
-        std::cout << "Carrier Image capacity: " << std::get<2>(res) << std::endl;
+        log("Can hide image: " + std::to_string(std::get<0>(res)));
+        log("Data size: " + std::to_string(std::get<1>(res)));
+        log("Carrier Image capacity: " + std::to_string(std::get<2>(res)));
 
         if (!std::get<0>(res)) {
             throw std::runtime_error("Image too small to hide the specified data");
@@ -329,12 +337,12 @@ void ImageCryptoApp::hideSteganographyData() {
             buffer << file.rdbuf();
             dataToHide = buffer.str();
             if (debug) {
-                std::cout << "Loaded data from file: " << hiddenData << " (" << dataToHide.size() << " bytes)" << std::endl;
+                log("Loaded data from file: " + hiddenData + " (" + std::to_string(dataToHide.size()) + " bytes)");
             }
         } else {
             dataToHide = hiddenData;
             if (debug) {
-                std::cout << "Using literal string data (" << dataToHide.size() << " bytes)" << std::endl;
+                log("Using literal string data (" + std::to_string(dataToHide.size()) + " bytes)");
             }
         }
 
@@ -347,7 +355,7 @@ void ImageCryptoApp::hideSteganographyData() {
 
     ImageLoader::saveImage(outputPath, outImage, false);
     if (debug) {
-        std::cout << "Steganographic image saved to: " << outputPath << std::endl;
+        log("Steganographic image saved to: " + outputPath);
     }
 }
 
@@ -358,7 +366,7 @@ void ImageCryptoApp::extractSteganographyData() {
     }
 
     if (debug) {
-        std::cout << "Extracting data using " << stegAlgo << " algorithm..." << std::endl;
+        log("Extracting data using " + stegAlgo + " algorithm...");
     }
 
     bool success = false;
@@ -371,7 +379,7 @@ void ImageCryptoApp::extractSteganographyData() {
 
         ImageLoader::saveImage(outputPath, outImage, false);
         if (debug) {
-            std::cout << "Extracted image saved to: " << outputPath << std::endl;
+            log("Extracted image saved to: " + outputPath);
         }
     } else {
         std::string extracted;
@@ -381,8 +389,8 @@ void ImageCryptoApp::extractSteganographyData() {
         }
 
         if (outputPath == inputPath + ".out") {
-            std::cout << "Extracted data:" << std::endl;
-            std::cout << extracted << std::endl;
+            log("Extracted data:");
+            log(extracted);
         } else {
             std::ofstream outFile(outputPath);
             if (!outFile.good()) {
@@ -390,7 +398,7 @@ void ImageCryptoApp::extractSteganographyData() {
             }
             outFile << extracted;
             if (debug) {
-                std::cout << "Extracted data saved to: " << outputPath << std::endl;
+                log("Extracted data saved to: " + outputPath);
             }
         }
     }
